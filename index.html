@@ -1,170 +1,41 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MP4 170×320 Resizer</title>
-
-  <!-- ★ 重要：ffmpeg.wasm の UMD 版を読み込む（window.ffmpeg が生える） -->
-  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.7/dist/ffmpeg.umd.min.js"></script>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MP4 170x320 Converter</title>
   <style>
     body {
       font-family: sans-serif;
-      background: #f0f0f0;
       padding: 20px;
-      display: flex;
-      justify-content: center;
+      background: #f0f0f0;
     }
     .box {
+      max-width: 400px;
       background: white;
       padding: 20px;
-      width: 380px;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    .drop {
-      border: 2px dashed #666;
-      padding: 20px;
+      margin: auto;
       border-radius: 10px;
       text-align: center;
-      cursor: pointer;
-      margin-bottom: 20px;
-      background: #fafafa;
-      user-select: none;
     }
-    .progress {
-      background: #ddd;
-      height: 8px;
-      border-radius: 4px;
-      margin-top: 10px;
+    input {
+      margin: 20px 0;
     }
-    .bar {
-      height: 100%;
-      background: #333;
-      width: 0%;
-      border-radius: 4px;
+    .hidden {
+      display: none;
     }
   </style>
 </head>
 <body>
   <div class="box">
-    <h2>MP4 → 170×320 変換ツール</h2>
-    <p>GitHub Pages 上で動作します（完全ブラウザ内変換）。</p>
-
-    <div class="drop" id="drop">クリックまたは MP4 をドロップ</div>
-    <input type="file" id="file" accept="video/mp4" style="display:none" />
-
-    <div id="status"></div>
-    <div class="progress"><div class="bar" id="bar"></div></div>
-
-    <video id="video" controls style="width:100%; margin-top:20px; display:none"></video>
-    <a id="download" style="display:none" download="resized.mp4">ダウンロード</a>
+    <h2>MP4 → 170×320 Converter</h2>
+    <input type="file" id="fileInput" accept="video/mp4" />
+    <p id="status"></p>
+    <a id="downloadLink" class="hidden">Download Converted MP4</a>
   </div>
 
-  <script>
-    // ★ ffmpeg は UMD 版なので window.ffmpeg.FFmpeg を使用する
-    const { createFFmpeg, fetchFile } = window.ffmpeg;
-
-    const ffmpeg = createFFmpeg({ log: true });
-
-    const drop = document.getElementById("drop");
-    const fileInput = document.getElementById("file");
-    const statusEl = document.getElementById("status");
-    const bar = document.getElementById("bar");
-    const video = document.getElementById("video");
-    const download = document.getElementById("download");
-
-    /* ========================
-       クリック動作
-    ======================== */
-    drop.addEventListener("click", () => {
-      fileInput.click();
-    });
-
-    /* ========================
-       ドラッグ & ドロップ動作
-    ======================== */
-    drop.addEventListener("dragover", (e) => {
-      e.preventDefault();
-      drop.style.background = "#e8e8e8";
-    });
-
-    drop.addEventListener("dragleave", () => {
-      drop.style.background = "#fafafa";
-    });
-
-    drop.addEventListener("drop", (e) => {
-      e.preventDefault();
-      drop.style.background = "#fafafa";
-      const file = e.dataTransfer.files[0];
-      handleFile(file);
-    });
-
-    fileInput.addEventListener("change", () => {
-      handleFile(fileInput.files[0]);
-    });
-
-    /* ========================
-       メイン処理
-    ======================== */
-    async function handleFile(file) {
-      if (!file) return;
-      if (file.type !== "video/mp4") {
-        alert("MP4 ファイルを選択してください");
-        return;
-      }
-
-      statusEl.innerText = "ffmpeg.wasm 読み込み中...";
-
-      try {
-        if (!ffmpeg.isLoaded()) {
-          await ffmpeg.load();
-        }
-      } catch (err) {
-        statusEl.innerText = "ffmpeg の読み込みに失敗しました。";
-        console.error(err);
-        return;
-      }
-
-      statusEl.innerText = "変換中...";
-      bar.style.width = "0%";
-
-      ffmpeg.setProgress(({ ratio }) => {
-        bar.style.width = (ratio * 100).toFixed(0) + "%";
-      });
-
-      try {
-        ffmpeg.FS("writeFile", "input.mp4", await fetchFile(file));
-
-        await ffmpeg.run(
-          "-i", "input.mp4",
-          "-vf", "scale=170:320",
-          "-c:v", "libx264",
-          "-preset", "veryfast",
-          "-crf", "23",
-          "-c:a", "aac",
-          "output.mp4"
-        );
-      } catch (err) {
-        statusEl.innerText = "変換エラーが発生しました。";
-        console.error(err);
-        return;
-      }
-
-      const data = ffmpeg.FS("readFile", "output.mp4");
-      const blob = new Blob([data.buffer], { type: "video/mp4" });
-      const url = URL.createObjectURL(blob);
-
-      video.src = url;
-      video.style.display = "block";
-
-      download.href = url;
-      download.style.display = "block";
-      download.innerText = "ダウンロード";
-
-      statusEl.innerText = "完了しました";
-    }
-  </script>
+  <!-- ffmpeg.wasm CDN -->
+  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.4/dist/ffmpeg.min.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
